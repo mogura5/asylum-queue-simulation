@@ -13,11 +13,19 @@ ASY_TYPE_MAP = {
     'I': 'affirmative', # Affirmative: with DHS asylum office
 }
 
-# Relief decision mapping
+# Relief decision mapping (appl_dec on reliefApplications.csv).
+# M/S/T added per redesign-decisions.md item 5: M = not adjudicated,
+# S = administrative closure, T = change of venue/transfer -- all three
+# are exits from the pipeline that aren't a grant or an on-the-merits
+# denial, so they map to 'other_exit' like the other procedural codes.
+# NOTE: this only affects the `outcome` text label; `relief_granted` is
+# computed separately as `appl_dec.isin(['G', 'C'])` and was already
+# correctly excluding these codes from the grant-rate math.
 RELIEF_DECISION_MAP = {
     'G': 'granted', 'C': 'granted', 'F': 'granted', 'I': 'granted',
     'D': 'denied',
-    'O': 'other_exit', 'W': 'other_exit', 'A': 'other_exit'
+    'O': 'other_exit', 'W': 'other_exit', 'A': 'other_exit',
+    'M': 'other_exit', 'S': 'other_exit', 'T': 'other_exit',
 }
 
 # IJ Decision Code mapping — dec_code is the IJ's Procedural decision.
@@ -43,6 +51,13 @@ CUSTODY_MAP = {
     'R': 'released',
     'D': 'detained',
 }
+
+# Number of court archetypes to cluster into. Reduced from 4 to 2 per
+# redesign-decisions.md item 4: silhouette scores across k=2..7 on
+# (volume, grant_rate) showed k=2 best-supported (0.587) and k=4 one of
+# the worst in range (0.429). Intentional scope change from the paper's
+# original "four court archetypes" framing, confirmed with the user.
+N_COURT_ARCHETYPES = 2
 
 # ============================================
 # DATA PROCESSOR
@@ -87,7 +102,7 @@ class CompleteTRACDataProcessor:
         print("\n9. Aggregating to case level...")
         df = self._aggregate_to_case_level(df)
 
-        print("\n10. Clustering courts into 4 Simulation Archetypes...")
+        print(f"\n10. Clustering courts into {N_COURT_ARCHETYPES} Simulation Archetypes...")
         df = self._cluster_courts(df)
 
         self.df = df
@@ -201,7 +216,13 @@ class CompleteTRACDataProcessor:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce')
 
-        df['arrival_date'] = df['cinput_date']
+        # arrival_date now uses cosc_date (NTA issued -- the true start of
+        # a case) instead of cinput_date (NTA received by the court).
+        # Per redesign-decisions.md item 2: the diagnostic found a heavy
+        # tail between the two (12.4% of proceedings >12mo gap, 7.7%
+        # >24mo, max ~47mo) that was dragging service_time_p90/mean stats
+        # under the old cinput_date-based definition.
+        df['arrival_date'] = df['cosc_date']
         df['completion_date'] = df['ccomp_date']
 
         df['arrival_year'] = df['arrival_date'].dt.year
@@ -302,7 +323,9 @@ class CompleteTRACDataProcessor:
 
         scaler = StandardScaler()
         features = scaler.fit_transform(valid_courts[['total_cases', 'grant_rate']])
-        kmeans = KMeans(n_clusters=4, random_state=42)
+        # n_clusters reduced from 4 to 2 -- see N_COURT_ARCHETYPES above and
+        # redesign-decisions.md item 4 (silhouette score comparison).
+        kmeans = KMeans(n_clusters=N_COURT_ARCHETYPES, random_state=42)
         valid_courts['court_cluster'] = kmeans.fit_predict(features)
 
         df = df.merge(valid_courts[['base_city_code', 'court_cluster']], on='base_city_code', how='left')

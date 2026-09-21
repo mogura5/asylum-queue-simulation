@@ -1,5 +1,0 @@
-Archetype,λ (cases/mo),Svc Mean (mo),Svc Median (mo),Svc Std,Grant Rate,Appeal Rate,P(Rep),P(Detained),P(Renege)
-low_vol_high_grant,3267.08,25.42,21.45,21.27,0.161,0.077,0.782,0.219,0.063
-low_vol_low_grant,3521.17,34.0,36.07,20.31,0.158,0.021,0.870,0.008,0.115
-high_vol_high_grant,3152.92,40.57,45.11,21.09,0.103,0.028,0.868,0.023,0.078
-high_vol_low_grant,6305.92,39.14,42.77,20.84,0.079,0.040,0.858,0.046,0.080
