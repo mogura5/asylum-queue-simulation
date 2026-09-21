@@ -34,12 +34,6 @@ Two-stage tandem-queue simulation of the U.S. asylum adjudication process (Offic
     └── test_stage.py
 ```
 
-`calibration_diagnostic.py`: keep it in the repo. It's what produced the five calibration findings documented in the decisions log (censoring bias, complexity-direction reversal, k=2 archetype fit, code-mapping coverage, `cinput_date` vs `cosc_date` gap) — without it, those findings have no reproducible source.
-
-## Running things
-
-All commands assume you're in the repo root unless noted, and that `src/` is on `PYTHONPATH` (or you `cd src/` first — the modules import each other with bare names, e.g. `from case import Case`).
-
 ### 1. Calibration pipeline (run in order, once, to produce `data/sim_parameters_FINAL.json`)
 
 ```bash
@@ -119,8 +113,6 @@ pip install ruff mypy
 ruff check src/ calibration/ figures/ diagnostics/ tests/
 mypy src/ figures/ diagnostics/
 ```
-
-`orchestrator.py`, `generate_figures.py`, and `diagnostics/verify_cel_stage2_idle.py` already use type hints throughout; `case.py`/`queues.py`/`stage.py`/`simulator.py`/`cel.py` are inconsistent, so `mypy` will flag those first if added.
 
 ## Class/module structure reference
 
